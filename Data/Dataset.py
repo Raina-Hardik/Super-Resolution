@@ -19,7 +19,7 @@ class Data(Dataset):
             lr_image, hr_image = F.hflip(lr_image), F.hflip(hr_image)   # Horizontal Flip 50% probability
         
         rn = randint(4, (1,)).item()
-        return F.rotate(lr_image, rn * 90), F.rotate(hr_image, rn * 90) # Rotate by 90 degrees random times
+        return F.rotate(lr_image, rn * 90), F.rotate(hr_image, rn * 90) # Rotate by 90 degrees random 
 
     def __len__(self):
         return len(self.dataset)
