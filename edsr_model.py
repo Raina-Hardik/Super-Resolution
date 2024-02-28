@@ -8,8 +8,8 @@ class ResBlock(nn.Module):
     def __init__(self, in_channels = 256):
         super(ResBlock, self).__init__()
 
-        self.conv = nn.Conv2d(in_channels = in_channels, 
-                               in_channels = in_channels, 
+        self.conv = nn.Conv2d( in_channels = in_channels, 
+                               out_channels = in_channels, 
                                kernel_size = kernel_size, 
                                padding = padding)
         
