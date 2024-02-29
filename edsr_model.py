@@ -57,3 +57,4 @@ class EDSR(nn.Module):
         out = self.conv_out(out)
 
         return out
+    
