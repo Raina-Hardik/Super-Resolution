@@ -134,17 +134,3 @@ class Discriminator(nn.Module):
     def forward(self, x):
         x = self.block(x)
         return self.classifier(x)
-
-def edsr_test():
-    low_resolution = 24
-    with torch.gpu.amp.autocast():
-        x = torch.randn((5, 3, low_resolution, low_resolution))
-        gen = Generator()
-        gen_out = gen(x)
-        disc = Discriminator()
-        disc_out = disc(gen_out)
-
-        print(gen_out.shape)
-        print(disc_out.shape)
-        print(list(gen.parameters()))
-        print(list(disc.parameters()))
