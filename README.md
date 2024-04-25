@@ -1,32 +1,50 @@
-# Super Resolution
- This repository unofficially implements the single-image super-resolution techniques proposed in the paper "Enhanced Deep Residual Networks for Single Image Super-Resolution" by Bee Lim, et al.
+# Image Super-Resolution with EDSR
 
-# Project Setup
+This project implements a super-resolution model based on the Enhanced Deep Residual Networks (EDSR) architecture. It allows users to enhance the resolution of their images using a pre-trained EDSR model.
 
-## Step 0: Setting Up Virtual Environment and Installing Dependencies
+## Getting Started
 
-Before you start working on the project, follow these steps to set up your virtual environment and install the necessary dependencies.
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
 
-1. **Create Virtual Environment:**
-   Open a terminal or command prompt and run the following command to create a virtual environment named `venv`:
+### Prerequisites
+
+Make sure you have Python installed on your system. You can download it from [python.org](https://www.python.org/).
+
+### Installation
+
+1. Clone the repository to your local machine:
    ```bash
-   python -m venv venv
+   git clone https://github.com/your-username/your-repo.git
    ```
 
-2. **Activate Virtual Environment:**
-   Activate the virtual environment. The command varies based on your operating system:
-   - On Windows:
-     ```bash
-     .\venv\Scripts\activate
-     ```
-   - On Unix or MacOS:
-     ```bash
-     source venv/bin/activate
-     ```
+2. Navigate to the project directory:
+   ```bash
+   cd your-repo
+   ```
 
-3. **Install Dependencies:**
-   After activating the virtual environment, install the project dependencies using the following command:
+3. Install the required Python packages:
    ```bash
    pip install -r requirements.txt
    ```
-## Step 0: Setting Up Virtual Environment and Installing Dependencies
+
+### Usage
+
+1. Run the `app.py` script:
+   ```bash
+   python app.py
+   ```
+
+2. Once the application is running, use the "Choose file" button to select the image you want to enhance.
+
+3. After selecting the file, a prompt will appear asking you to select the location where you want the processed file to be stored. Choose your desired location and confirm.
+
+4. The application will process the image using the EDSR model and save the enhanced image to the specified location.
+
+## Acknowledgments
+
+- This project is based on the Enhanced Deep Residual Networks (EDSR) architecture, developed by Bee Lim, Sanghyun Son, Heewon Kim, Seungjun Nah, and Kyoung Mu Lee. More information about EDSR can be found in their [paper](https://arxiv.org/abs/1707.02921).
+- Special thanks to the authors of the pre-trained EDSR model used in this project.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
