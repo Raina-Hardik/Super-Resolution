@@ -14,12 +14,12 @@ Make sure you have Python installed on your system. You can download it from [py
 
 1. Clone the repository to your local machine:
    ```bash
-   git clone https://github.com/your-username/your-repo.git
+   git clone https://github.com/Raina-Hardik/Super-Resolution.git
    ```
 
 2. Navigate to the project directory:
    ```bash
-   cd your-repo
+   cd Super-Resolution
    ```
 
 3. Install the required Python packages:
