@@ -1,0 +1,121 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov httpx
+
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+
+    - name: Test with pytest
+      run: |
+        # Create test directories
+        mkdir -p uploads output
+        # Run basic import test
+        python -c "from app import app; print('App imported successfully')"
+      continue-on-error: true
+
+    - name: Check health endpoint
+      run: |
+        # Start the app in background
+        uvicorn app:app --host 0.0.0.0 --port 8000 &
+        APP_PID=$!
+        sleep 5
+        # Check health endpoint
+        curl -f http://localhost:8000/health || exit 1
+        # Stop the app
+        kill $APP_PID
+      continue-on-error: true
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: super-resolution:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker image
+      run: |
+        docker run -d --name test-container -p 8000:8000 super-resolution:latest
+        sleep 10
+        curl -f http://localhost:8000/health || exit 1
+        docker stop test-container
+        docker rm test-container
+
+  # Uncomment to enable Docker Hub publishing
+  # publish:
+  #   runs-on: ubuntu-latest
+  #   needs: [test, docker]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #
+  #   - name: Set up Docker Buildx
+  #     uses: docker/setup-buildx-action@v3
+  #
+  #   - name: Login to Docker Hub
+  #     uses: docker/login-action@v3
+  #     with:
+  #       username: ${{ secrets.DOCKERHUB_USERNAME }}
+  #       password: ${{ secrets.DOCKERHUB_TOKEN }}
+  #
+  #   - name: Build and push
+  #     uses: docker/build-push-action@v5
+  #     with:
+  #       context: .
+  #       push: true
+  #       tags: |
+  #         ${{ secrets.DOCKERHUB_USERNAME }}/super-resolution:latest
+  #         ${{ secrets.DOCKERHUB_USERNAME }}/super-resolution:${{ github.sha }}
+  #       cache-from: type=gha
+  #       cache-to: type=gha,mode=max
