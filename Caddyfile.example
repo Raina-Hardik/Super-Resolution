@@ -1,0 +1,130 @@
+# Caddyfile for Super-Resolution Application
+# This is an OPTIONAL reverse proxy configuration using Caddy
+# 
+# To use this file:
+# 1. Rename to 'Caddyfile' (remove .example extension)
+# 2. Update 'your-domain.com' to your actual domain
+# 3. Install Caddy: https://caddyserver.com/docs/install
+# 4. Run: caddy run
+#
+# For Docker deployment, uncomment the Caddy service in docker-compose.yml
+
+# ============================================
+# Option 1: Local development (no HTTPS)
+# ============================================
+:80 {
+    # Reverse proxy to FastAPI application
+    reverse_proxy localhost:8000
+    
+    # Enable gzip compression
+    encode gzip
+    
+    # Access logging
+    log {
+        output file /var/log/caddy/access.log
+        format json
+    }
+}
+
+# ============================================
+# Option 2: Production with custom domain (automatic HTTPS)
+# ============================================
+# your-domain.com {
+#     # Reverse proxy to FastAPI application
+#     reverse_proxy localhost:8000
+#     
+#     # Enable gzip compression
+#     encode gzip
+#     
+#     # Security headers
+#     header {
+#         # Enable HTTP Strict Transport Security (HSTS)
+#         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+#         
+#         # Prevent clickjacking
+#         X-Frame-Options "SAMEORIGIN"
+#         
+#         # Prevent MIME type sniffing
+#         X-Content-Type-Options "nosniff"
+#         
+#         # XSS Protection
+#         X-XSS-Protection "1; mode=block"
+#         
+#         # Referrer Policy
+#         Referrer-Policy "strict-origin-when-cross-origin"
+#         
+#         # Content Security Policy (adjust as needed)
+#         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
+#     }
+#     
+#     # Access logging
+#     log {
+#         output file /var/log/caddy/access.log
+#         format json
+#     }
+#     
+#     # Rate limiting (requires caddy-ratelimit plugin)
+#     # rate_limit {
+#     #     zone dynamic {
+#     #         key {remote_host}
+#     #         events 100
+#     #         window 1m
+#     #     }
+#     # }
+# }
+
+# ============================================
+# Option 3: Multiple domains or subdomains
+# ============================================
+# api.your-domain.com {
+#     reverse_proxy localhost:8000
+#     encode gzip
+# }
+# 
+# www.your-domain.com, your-domain.com {
+#     reverse_proxy localhost:8000
+#     encode gzip
+# }
+
+# ============================================
+# Option 4: Docker internal network
+# ============================================
+# Use this configuration when running Caddy in Docker
+# :80 {
+#     reverse_proxy super-resolution:8000
+#     encode gzip
+# }
+
+# ============================================
+# Advanced: Load balancing (multiple instances)
+# ============================================
+# your-domain.com {
+#     reverse_proxy {
+#         to localhost:8000 localhost:8001 localhost:8002
+#         lb_policy round_robin
+#         health_uri /health
+#         health_interval 30s
+#         health_timeout 10s
+#     }
+#     encode gzip
+# }
+
+# ============================================
+# Advanced: File upload size limit
+# ============================================
+# your-domain.com {
+#     reverse_proxy localhost:8000 {
+#         # Increase timeout for large uploads
+#         transport http {
+#             read_timeout 300s
+#             write_timeout 300s
+#         }
+#     }
+#     
+#     # Limit request body size (e.g., 50MB)
+#     request_body {
+#         max_size 50MB
+#     }
+#     
+#     encode gzip
+# }
