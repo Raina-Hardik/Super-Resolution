@@ -28,6 +28,7 @@ COPY core/ core/
 COPY models/ models/
 COPY utils/ utils/
 COPY train.py .
+COPY README.md .
 
 # Install dependencies using uv (this will install PyTorch with CUDA support if requested)
 RUN uv pip install --system -e .
