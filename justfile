@@ -19,9 +19,27 @@ train:
 build:
     docker build -t super-resolution -f docker/Dockerfile .
 
-# Deploy the stack (Docker Compose or similar)
+# Deploy CPU only stack
+deploy-cpu:
+    docker compose up -d
+
+# Deploy GPU stack
+deploy-gpu:
+    docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+# Deploy auto (checks for nvidia-smi)
 deploy:
-    docker-compose up -d
+    @if command -v nvidia-smi > /dev/null 2>&1; then \
+        echo "NVIDIA GPU detected. Deploying with GPU support..."; \
+        just deploy-gpu; \
+    else \
+        echo "No NVIDIA GPU detected. Deploying CPU only..."; \
+        just deploy-cpu; \
+    fi
+
+# Run tests
+test:
+    uv run pytest tests/
 
 # Install dependencies using uv
 install:

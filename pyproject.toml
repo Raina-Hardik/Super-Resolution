@@ -59,6 +59,9 @@ dev = [
     "isort>=7.0.0",
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = ["api", "core", "models", "utils"]
+
 [project.urls]
 Homepage = "https://github.com/Raina-Hardik/Super-Resolution"
 Repository = "https://github.com/Raina-Hardik/Super-Resolution"
@@ -68,8 +71,8 @@ Documentation = "https://github.com/Raina-Hardik/Super-Resolution#readme"
 [project.scripts]
 super-resolution = "api.main:app"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "pytest-asyncio>=1.3.0",

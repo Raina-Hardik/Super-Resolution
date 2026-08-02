@@ -4,53 +4,40 @@ services:
   super-resolution:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
     container_name: super-resolution-app
-    ports:
-      - "8000:8000"
     volumes:
-      # Mount directories for persistent data
       - ./uploads:/app/uploads
       - ./output:/app/output
-      # Optional: Mount model weights if you have them
-      # - ./models:/app/models:ro
+      - ./weights:/app/weights
     environment:
       - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=info
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
     networks:
       - super-resolution-network
 
-  # Optional: Caddy reverse proxy (uncomment to use)
-  # caddy:
-  #   image: caddy:2-alpine
-  #   container_name: super-resolution-caddy
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./Caddyfile:/etc/caddy/Caddyfile:ro
-  #     - caddy_data:/data
-  #     - caddy_config:/config
-  #   depends_on:
-  #     - super-resolution
-  #   restart: unless-stopped
-  #   networks:
-  #     - super-resolution-network
+  caddy:
+    image: caddy:2-alpine
+    container_name: super-resolution-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME:-super-res.local}
+    depends_on:
+      - super-resolution
+    restart: unless-stopped
+    networks:
+      - super-resolution-network
 
 networks:
   super-resolution-network:
     driver: bridge
 
 volumes:
-  # Uncomment if using Caddy
-  # caddy_data:
-  # caddy_config:
-  uploads:
-  output:
+  caddy_data:
+  caddy_config:
