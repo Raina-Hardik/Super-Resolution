@@ -41,6 +41,18 @@ deploy:
 test:
     uv run pytest tests/
 
+# Bust the dragonfly cache (requires setting JWT token or bypass)
+cache-bust token="":
+    @if [ -z "{{token}}" ]; then \
+        echo "Error: Must provide an admin JWT token. Usage: just cache-bust <token>"; \
+        exit 1; \
+    fi
+    curl -X POST -H "Authorization: Bearer {{token}}" -k https://localhost/api/v1/cache/bust
+
+# Generate an admin JWT token
+generate-admin-token:
+    uv run python -c "from core.auth import generate_token; print(generate_token())"
+
 # Install dependencies using uv
 install:
     uv sync
