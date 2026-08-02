@@ -22,15 +22,15 @@ ENV PATH="/root/.local/bin:${PATH}"
 # Copy pyproject.toml and lockfile (if exists)
 COPY pyproject.toml .
 
-# Install dependencies using uv (this will install PyTorch with CUDA support if requested)
-RUN uv pip install --system -e .
-
-# Copy application code
+# Copy application code first so hatchling can find it during install
 COPY api/ api/
 COPY core/ core/
 COPY models/ models/
 COPY utils/ utils/
 COPY train.py .
+
+# Install dependencies using uv (this will install PyTorch with CUDA support if requested)
+RUN uv pip install --system -e .
 
 # Create necessary directories
 RUN mkdir -p uploads output weights
