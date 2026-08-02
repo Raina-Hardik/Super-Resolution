@@ -178,7 +178,6 @@ weights/
 .dockerignore
 
 # Caddy
-Caddyfile
 caddy_data/
 caddy_config/
 
