@@ -79,14 +79,11 @@ curl http://localhost:8000/health
 import requests
 
 # Upload image
-with open('image.jpg', 'rb') as f:
-    response = requests.post(
-        'http://localhost:8000/upload',
-        files={'file': f}
-    )
-    
+with open("image.jpg", "rb") as f:
+    response = requests.post("http://localhost:8000/upload", files={"file": f})
+
     # Save result
-    with open('enhanced.png', 'wb') as out:
+    with open("enhanced.png", "wb") as out:
         out.write(response.content)
 ```
 

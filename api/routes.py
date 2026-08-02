@@ -1,88 +1,109 @@
-import shutil
+import os
 import uuid
-from pathlib import Path
 
-import torch
-from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
-from PIL import Image
-from torchvision.utils import save_image
+import redis
+from celery.result import AsyncResult
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
-from api.dependencies import GeneratorDep
+from api.dependencies import get_current_admin, rate_limit_guest
 from core.config import settings
-from utils.image import to_tensor
+from core.logging import get_logger
+from core.tasks import process_job
 
+logger = get_logger("api_routes")
 router = APIRouter()
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
-# Setup directories
-UPLOAD_FOLDER = Path("uploads")
-OUTPUT_FOLDER = Path("output")
-UPLOAD_FOLDER.mkdir(exist_ok=True)
-OUTPUT_FOLDER.mkdir(exist_ok=True)
+redis_client = redis.Redis.from_url(os.environ.get("REDIS_URL", "redis://dragonfly:6379/0"))
 
+# Metrics
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP Requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP Request Duration', ['endpoint'])
 
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-@router.post("/upload")
-async def upload_file(model: GeneratorDep, file: UploadFile = File(...)):
+@router.post("/api/v1/jobs", dependencies=[Depends(rate_limit_guest)])
+async def submit_job(file: UploadFile = File(...)):
     """
-    Enhance image resolution using the EDSR model.
+    Submit an image for super-resolution processing. (Guest mode - rate limited)
     """
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No file provided")
+    if not file.filename or not allowed_file(file.filename):
+        raise HTTPException(status_code=400, detail="Invalid file format.")
 
-    if not allowed_file(file.filename):
-        raise HTTPException(status_code=400, detail=f"Invalid file format. Allowed: {', '.join(ALLOWED_EXTENSIONS)}")
+    job_id = uuid.uuid4().hex
 
-    file_id = uuid.uuid4().hex
-    file_ext = file.filename.rsplit(".", 1)[1].lower()
-    input_path = UPLOAD_FOLDER / f"{file_id}_input.{file_ext}"
-    output_path = OUTPUT_FOLDER / f"{file_id}_output.png"
+    # Read bytes and dispatch to Celery
+    file_bytes = await file.read()
+    process_job.apply_async(args=[job_id, file_bytes], task_id=job_id)
 
+    logger.info("Job submitted", job_id=job_id)
+    return {"job_id": job_id, "status": "PENDING"}
+
+
+@router.get("/api/v1/jobs/{job_id}")
+async def get_job_status(job_id: str):
+    """
+    Check the status of a super-resolution job.
+    """
+    task = AsyncResult(job_id)
+    response = {
+        "job_id": job_id,
+        "status": task.status,
+    }
+
+    if task.status == 'PROCESSING':
+        response["progress"] = task.info.get("progress", 0) if task.info else 0
+    elif task.status == 'FAILURE':
+        response["error"] = str(task.info)
+
+    return response
+
+
+@router.get("/api/v1/jobs/{job_id}/result")
+async def get_job_result(job_id: str):
+    """
+    Download the final enhanced image if the job is complete.
+    """
+    task = AsyncResult(job_id)
+    if task.status != 'SUCCESS':
+        raise HTTPException(status_code=400, detail=f"Job is not complete. Current status: {task.status}")
+
+    output_path = task.result.get("output_path")
+    if not output_path or not os.path.exists(output_path):
+        raise HTTPException(status_code=404, detail="Result file not found on disk.")
+
+    return FileResponse(output_path, media_type="image/png", filename=f"{job_id}_enhanced.png")
+
+
+@router.post("/api/v1/cache/bust", dependencies=[Depends(get_current_admin)])
+async def bust_cache():
+    """
+    Clear all cached tiles in Dragonfly. Requires Admin JWT.
+    """
     try:
-        # Save uploaded file
-        with input_path.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        # Open and process image
-        img = Image.open(input_path).convert("RGB")
-
-        # Convert to tensor and add batch dimension
-        img_tensor = to_tensor(img).unsqueeze(0).to(settings.device)
-
-        # Inference
-        with torch.no_grad():
-            output_tensor = model(img_tensor)
-
-        # Denormalize (output is tanh [-1, 1], convert to [0, 1])
-        output_tensor = (output_tensor + 1.0) / 2.0
-
-        # Save output
-        save_image(output_tensor, output_path)
-
-        # Clean up input
-        input_path.unlink(missing_ok=True)
-
-        return FileResponse(output_path, media_type="image/png", filename="enhanced_image.png")
+        # Delete all keys matching tile_cache:*
+        keys = redis_client.keys("tile_cache:*")
+        if keys:
+            redis_client.delete(*keys)
+        logger.info("Cache busted successfully", cleared_keys=len(keys))
+        return {"status": "success", "cleared_keys": len(keys)}
     except Exception as e:
-        input_path.unlink(missing_ok=True)
-        output_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}") from e
+        logger.error("Cache bust failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Cache bust failed") from e
+
+
+@router.get("/metrics")
+async def metrics():
+    """
+    Prometheus metrics endpoint.
+    """
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @router.get("/health")
 async def health_check():
     return {"status": "healthy", "version": settings.version}
-
-
-@router.get("/api/v1/info")
-async def api_info():
-    return {
-        "name": settings.app_name,
-        "version": settings.version,
-        "endpoints": {"upload": "/upload (POST) - Image Super-Resolution endpoint", "health": "/health (GET) - Health check"},
-    }

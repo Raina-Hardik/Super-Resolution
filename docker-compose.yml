@@ -12,6 +12,37 @@ services:
       - ./weights:/app/weights
     environment:
       - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://dragonfly:6379/0
+      - CELERY_BROKER_URL=redis://dragonfly:6379/0
+    restart: unless-stopped
+    networks:
+      - super-resolution-network
+
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: dragonfly
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - super-resolution-network
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: super-resolution-worker
+    command: celery -A core.tasks worker --loglevel=info
+    volumes:
+      - ./uploads:/app/uploads
+      - ./output:/app/output
+      - ./weights:/app/weights
+    environment:
+      - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://dragonfly:6379/0
+      - CELERY_BROKER_URL=redis://dragonfly:6379/0
+    depends_on:
+      - dragonfly
     restart: unless-stopped
     networks:
       - super-resolution-network

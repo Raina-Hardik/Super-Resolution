@@ -1,7 +1,10 @@
-import torch
 from pathlib import Path
-from models.edsr import Generator
+
+import torch
+
 from core.config import settings
+from models.edsr import Generator
+
 
 class ModelLoader:
     _instance = None
@@ -11,11 +14,9 @@ class ModelLoader:
     def get_model(cls) -> Generator:
         if cls._model is None:
             cls._model = Generator(
-                in_channels=settings.in_channels,
-                num_channels=settings.num_channels,
-                num_blocks=settings.num_blocks
+                in_channels=settings.in_channels, num_channels=settings.num_channels, num_blocks=settings.num_blocks
             ).to(settings.device)
-            
+
             # Try to load weights
             weight_path = Path(settings.weights_dir) / settings.checkpoint_gen
             if weight_path.exists():
@@ -27,8 +28,9 @@ class ModelLoader:
                 cls._model.eval()
             else:
                 print(f"Warning: No weights found at {weight_path}. Model will output noise.")
-                
+
         return cls._model
+
 
 def get_generator() -> Generator:
     return ModelLoader.get_model()

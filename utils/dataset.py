@@ -1,13 +1,15 @@
-import torch
 import os
 import random
+
+import torch
 from PIL import Image
 from torch.utils.data import Dataset
+
 import utils.image as F
 
 
 class DIV2K(Dataset):
-    def __init__(self, root_dir, im_size, scale, transform = None):
+    def __init__(self, root_dir, im_size, scale, transform=None):
 
         self.root_dir = root_dir
         self.im_size = im_size
@@ -17,12 +19,12 @@ class DIV2K(Dataset):
         images = []
         labels = []
         for file in os.listdir(self.root_dir):
-            if file.lower().endswith('.png'):
+            if file.lower().endswith(".png"):
                 images.append(file)
         images.sort()
 
-        for file in os.listdir(self.root_dir + '/label'):
-            if file.lower().endswith('.png'):
+        for file in os.listdir(self.root_dir + "/label"):
+            if file.lower().endswith(".png"):
                 labels.append(file)
         labels.sort()
 
@@ -36,8 +38,8 @@ class DIV2K(Dataset):
         if torch.is_tensor(idx):
             idx = idx.to_list()
 
-        img_path = os.path.join(self.root_dir + '/img', self.images[idx])
-        label_path = os.path.join(self.root_dir + '/label', self.labels[idx])
+        img_path = os.path.join(self.root_dir + "/img", self.images[idx])
+        label_path = os.path.join(self.root_dir + "/label", self.labels[idx])
 
         img = Image.open(img_path)
         img = img.resize((int(self.im_size / self.scale), int(self.im_size / self.scale)))
@@ -123,7 +125,7 @@ class Normalize(object):
         return F.normalize(img, self.mean, self.std), F.normalize(label, self.mean, self.std)
 
     def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
+        return self.__class__.__name__ + "(mean={0}, std={1})".format(self.mean, self.std)
 
 
 class ToTensor(object):
@@ -144,7 +146,7 @@ class ToTensor(object):
         return F.to_tensor(img), F.to_tensor(label)
 
     def __repr__(self):
-        return self.__class__.__name__ + '()'
+        return self.__class__.__name__ + "()"
 
 
 class Compose(object):
@@ -170,9 +172,9 @@ class Compose(object):
         return img, label
 
     def __repr__(self):
-        format_string = self.__class__.__name__ + '('
+        format_string = self.__class__.__name__ + "("
         for t in self.transforms:
-            format_string += '\n'
-            format_string += '    {0}'.format(t)
-        format_string += '\n)'
+            format_string += "\n"
+            format_string += "    {0}".format(t)
+        format_string += "\n)"
         return format_string

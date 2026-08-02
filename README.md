@@ -190,12 +190,12 @@ curl http://localhost:8000/api/v1/info
 import requests
 
 # Upload and process image
-with open('image.jpg', 'rb') as f:
-    files = {'file': f}
-    response = requests.post('http://localhost:8000/upload', files=files)
-    
+with open("image.jpg", "rb") as f:
+    files = {"file": f}
+    response = requests.post("http://localhost:8000/upload", files=files)
+
     # Save enhanced image
-    with open('enhanced_image.png', 'wb') as out:
+    with open("enhanced_image.png", "wb") as out:
         out.write(response.content)
 ```
 
