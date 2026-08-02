@@ -1,16 +1,19 @@
 import numpy as np
-from PIL import Image
 import torch
 import torch.nn.functional as F
-   
+from PIL import Image
+
+
 def psnr(lr_image, hr_image, max_val=1.0):
     mse = F.mse_loss(lr_image, hr_image)
     psnr_value = 20 * torch.log10(max_val / torch.sqrt(mse))
     return psnr_value.item()
 
-def ssim(lr_image, hr_image, data_range=1.0, window_size=11, reduction='mean'):
+
+def ssim(lr_image, hr_image, data_range=1.0, window_size=11, reduction="mean"):
     ssim_value = F.ssim(lr_image, hr_image, data_range=data_range, win_size=window_size, reduction=reduction)
     return ssim_value.item()
+
 
 def normalize(tensor, mean, std):
     """
@@ -24,14 +27,15 @@ def normalize(tensor, mean, std):
         Tensor: Normalized Tensor image.
     """
 
-    for t, m, s in zip(tensor, mean, std):
+    for t, m, s in zip(tensor, mean, std, strict=False):
         t.sub_(m).div_(s)
     return tensor
+
 
 def to_tensor(pil_img):
     """
     Convert PIL Image to torch.tensor
-    
+
     Args:
         pil_img (ndarray or Image): Image to be converted
 
@@ -46,10 +50,10 @@ def to_tensor(pil_img):
     if isinstance(pil_img, Image.Image):
         img_array = np.array(pil_img)
         img_tensor = torch.from_numpy(img_array)
-        
-        if pil_img.mode in ('I', 'I;16', 'F', '1'):
+
+        if pil_img.mode in ("I", "I;16", "F", "1"):
             return img_tensor.float()
-        elif pil_img.mode == 'YCbCr':
+        elif pil_img.mode == "YCbCr":
             return img_tensor.transpose(0, 2).transpose(1, 2).float()
         else:
             return img_tensor.permute(2, 0, 1).float() / 255.0
