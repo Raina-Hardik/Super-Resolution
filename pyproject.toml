@@ -43,6 +43,7 @@ dependencies = [
     "scikit-learn>=1.8.0",
     "pyyaml>=6.0.3",
     "tqdm>=4.67.1",
+    "scalar-fastapi>=1.0.3",
 ]
 
 [project.optional-dependencies]
@@ -55,10 +56,6 @@ dev = [
     "flake8>=7.3.0",
     "mypy>=1.19.1",
     "isort>=7.0.0",
-]
-legacy = [
-    "flask>=3.1.2",
-    "werkzeug>=3.1.4",
 ]
 
 [project.urls]

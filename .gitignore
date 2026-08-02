@@ -156,8 +156,8 @@ Data/DIV2K_train_HR/
 output/
 uploads/
 
-# Models
-models/
+# Weights
+weights/
 *.pth
 *.tar
 *.h5
@@ -191,3 +191,5 @@ temp.py
 !Caddyfile.example
 !.env.example
 
+# Plans
+PLAN.md
