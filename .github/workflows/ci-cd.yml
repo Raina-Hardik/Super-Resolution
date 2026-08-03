@@ -25,15 +25,14 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-cov httpx
+        pip install -e ".[dev]"
 
     - name: Lint with flake8
       run: |
@@ -49,13 +48,13 @@ jobs:
         # Create test directories
         mkdir -p uploads output
         # Run basic import test
-        python -c "from app import app; print('App imported successfully')"
+        python -c "from api.main import app; print('App imported successfully')"
       continue-on-error: true
 
     - name: Check health endpoint
       run: |
         # Start the app in background
-        uvicorn app:app --host 0.0.0.0 --port 8000 &
+        uvicorn api.main:app --host 0.0.0.0 --port 8000 &
         APP_PID=$!
         sleep 5
         # Check health endpoint
@@ -78,6 +77,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: docker/Dockerfile
         push: false
         tags: super-resolution:latest
         cache-from: type=gha
@@ -113,6 +113,7 @@ jobs:
   #     uses: docker/build-push-action@v5
   #     with:
   #       context: .
+  #       file: docker/Dockerfile
   #       push: true
   #       tags: |
   #         ${{ secrets.DOCKERHUB_USERNAME }}/super-resolution:latest
