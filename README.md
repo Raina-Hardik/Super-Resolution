@@ -4,58 +4,48 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.5-009688.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-This project implements a super-resolution model based on the Enhanced Deep Residual Networks (EDSR) architecture. It allows users to enhance the resolution of their images using a pre-trained EDSR model.
+This project implements a scalable image super-resolution system based on the Enhanced Deep Residual Networks (EDSR) architecture. It enables users to enhance the resolution of their images using a pre-trained EDSR model, optimized for production workloads with asynchronous task processing and memory-efficient image tiling.
 
-## 🎉 What's New in v2.0
+## Features
 
-This is a **modernized and highly scalable version** of the application:
-- ✨ **FastAPI** instead of Flask for better performance and automatic API documentation
-- 🚀 **Asynchronous Processing** with Celery and Redis/Dragonfly backend to handle heavy loads
-- 🧠 **Memory Efficient Tiling** allowing super-resolution of arbitrarily large images without Out of Memory (OOM) errors
-- ⚡ **Dragonfly Cache** for extremely fast transient tile caching and rate limiting
-- 🛡️ **Guest Rate Limiting** to prevent abuse (e.g. 10 requests per minute per IP)
-- 🔑 **JWT Admin Authentication** for cache busting and administration
-- 📝 **Structured JSON Logging** with `structlog`, complete with 5MB rotating file handlers
-- 📊 **Prometheus Metrics** available for scraping and monitoring (`/metrics`)
-- 🐳 **Docker Compose** support for one-click full pipeline deployment (API, Celery, Dragonfly)
-- 🛠️ **Justfile** task runner for simplified development commands
+- **FastAPI Backend**: High-performance RESTful API with automatic documentation.
+- **Asynchronous Processing**: Celery workers backed by Redis/Dragonfly for handling heavy image processing tasks in the background.
+- **Memory-Efficient Tiling**: Automatically splits large images into tiles for super-resolution, preventing Out-of-Memory (OOM) errors on large inputs, and stitches them back together.
+- **High-Speed Caching**: Utilizes Dragonfly for fast transient tile caching and rate limiting.
+- **Rate Limiting**: IP-based rate limiting to protect the system from abuse.
+- **Secure Administration**: JWT-based authentication for administrative actions, such as cache management.
+- **Observability**: Structured JSON logging (via `structlog`) and Prometheus metrics for comprehensive monitoring.
+- **Containerized Deployment**: Ready-to-use Docker Compose configuration for one-click infrastructure provisioning.
 
-### Breaking Changes
-
-The application now operates entirely on an asynchronous worker model.
-- `POST /api/v1/jobs` - Submits an image and returns a `job_id`
-- `GET /api/v1/jobs/{job_id}` - Polls the status and progress of a task
-- `GET /api/v1/jobs/{job_id}/result` - Retrieves the final enhanced image once the status is `SUCCESS`
-
-## 📋 Prerequisites
+## Prerequisites
 
 - Python 3.11 or higher
-- [uv](https://github.com/astral-sh/uv) (recommended) for faster dependency management
+- [uv](https://github.com/astral-sh/uv) (recommended for dependency management)
 - [just](https://github.com/casey/just) command runner
-- Docker and Docker Compose (highly recommended for deployment)
-- NVIDIA GPU with CUDA (optional but highly recommended for speed)
+- Docker and Docker Compose (recommended for deployment)
+- NVIDIA GPU with CUDA (optional, but highly recommended for inference speed)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Docker Deployment (Recommended)
 
-To spin up the entire system (FastAPI, Celery Worker, Dragonfly Cache):
+To launch the complete infrastructure (FastAPI, Celery Worker, Dragonfly Cache):
 
 ```bash
 # Using standard docker compose
 docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
 
-# Or simply using our just recipe
+# Or using the just recipe
 just deploy-gpu
 ```
 
-If you do not have an NVIDIA GPU, you can run in CPU-only mode:
+For environments without an NVIDIA GPU (CPU-only mode):
 
 ```bash
 just deploy-cpu
 ```
 
-### Manual Installation for Development
+### Manual Installation (Development)
 
 1. Clone the repository:
    ```bash
@@ -63,17 +53,17 @@ just deploy-cpu
    cd Super-Resolution
    ```
 
-2. Sync dependencies:
+2. Install dependencies:
    ```bash
    uv sync
    ```
 
-3. Spin up the cache backend (Dragonfly or Redis):
+3. Start the cache backend (Dragonfly or Redis):
    ```bash
    docker run -d -p 6379:6379 docker.dragonflydb.io/dragonflydb/dragonfly:latest
    ```
 
-4. Start the Celery Worker (in a new terminal):
+4. Start the Celery Worker:
    ```bash
    uv run celery -A core.tasks.celery_app worker --loglevel=info
    ```
@@ -83,21 +73,18 @@ just deploy-cpu
    uv run uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-## 📖 Usage
+## Usage
 
 ### API Endpoints
 
-#### Interactive Documentation
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+The system exposes a RESTful API for interaction. Full interactive documentation is available locally via Swagger UI (`http://localhost:8000/docs`) and ReDoc (`http://localhost:8000/redoc`).
 
 #### Submitting a Job
 ```bash
-# Submit an image
 curl -X POST "http://localhost:8000/api/v1/jobs" \
   -F "file=@your-image.jpg"
 
-# Response
+# Expected Response:
 # {"job_id":"abc123def456","status":"PENDING"}
 ```
 
@@ -105,53 +92,55 @@ curl -X POST "http://localhost:8000/api/v1/jobs" \
 ```bash
 curl "http://localhost:8000/api/v1/jobs/abc123def456"
 
-# Response
+# Expected Response:
 # {"job_id":"abc123def456","status":"PROCESSING","progress":50}
 ```
 
 #### Retrieving Results
+Once the status returns `SUCCESS`, you can download the enhanced image:
 ```bash
 curl -o enhanced-image.png "http://localhost:8000/api/v1/jobs/abc123def456/result"
 ```
 
 ### Administrative Endpoints
 
-To manually clear the tile cache in Dragonfly, you need an Admin JWT token.
+To manually clear the tile cache in Dragonfly, an Admin JWT token is required.
 
 ```bash
 # Generate a token locally
 just generate-admin-token
 
-# Use the token to clear cache
+# Clear the cache using the token
 curl -X POST "http://localhost:8000/api/v1/cache/bust" \
   -H "Authorization: Bearer <YOUR_TOKEN>"
 ```
 
-### Metrics & Monitoring
-Prometheus metrics are available at `/metrics`:
+### Metrics and Monitoring
+
+Prometheus metrics are exposed at the `/metrics` endpoint for scraping:
 ```bash
 curl "http://localhost:8000/metrics"
 ```
 
-## 🔧 Configuration
+## Configuration
 
-### Environment Variables
-
-You can supply configuration in a `.env` file:
+System behavior can be configured via environment variables. Create a `.env` file in the project root:
 
 ```env
 # Server Configuration
 DOMAIN_NAME=super-res.local
 REDIS_URL=redis://localhost:6379/0
-JWT_SECRET_KEY=your_super_secret_key_here
+JWT_SECRET_KEY=your_secure_secret_key
 
 # App Settings
 LOG_LEVEL=INFO
 ```
 
-## 🏗️ Architecture
+## Architecture
 
-```
+The project is structured as follows:
+
+```text
 Super-Resolution/
 ├── api/                   # FastAPI routes and dependencies
 ├── core/                  # Core config, logging, auth, and Celery tasks
@@ -160,28 +149,29 @@ Super-Resolution/
 ├── tests/                 # Pytest test suite
 ├── docker-compose*.yml    # Docker configurations
 ├── justfile               # Build and deployment recipes
-└── pyproject.toml         # Dependencies managed via uv
+└── pyproject.toml         # Dependency management
 ```
 
-## 🛠️ Development
+## Development
 
 ### Running Tests
+Execute the test suite using pytest:
 ```bash
 uv run pytest tests/ -v
 ```
 
 ### Code Formatting and Linting
-We use Ruff for rapid linting and formatting.
+The project uses Ruff for linting and formatting:
 ```bash
 uvx ruff check --fix .
 uvx ruff format .
 ```
 
-## 📚 Acknowledgments
+## Acknowledgments
 
-- This project is based on the Enhanced Deep Residual Networks (EDSR) architecture, developed by Bee Lim, Sanghyun Son, Heewon Kim, Seungjun Nah, and Kyoung Mu Lee. More information about EDSR can be found in their [paper](https://arxiv.org/abs/1707.02921).
-- Built with [FastAPI](https://fastapi.tiangolo.com/), [Celery](https://docs.celeryq.dev/), and [Dragonfly](https://www.dragonflydb.io/).
+- This project is based on the Enhanced Deep Residual Networks (EDSR) architecture, developed by Bee Lim, Sanghyun Son, Heewon Kim, Seungjun Nah, and Kyoung Mu Lee. Further details can be found in their [paper](https://arxiv.org/abs/1707.02921).
+- Built leveraging [FastAPI](https://fastapi.tiangolo.com/), [Celery](https://docs.celeryq.dev/), and [Dragonfly](https://www.dragonflydb.io/).
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
