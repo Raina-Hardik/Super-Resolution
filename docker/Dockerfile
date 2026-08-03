@@ -1,7 +1,7 @@
 # Use an NVIDIA CUDA base image with Python support (via ubuntu or a python image)
 # We'll use a python slim image as base, but it can be run with --gpus all for CUDA.
 # The actual PyTorch version installed by uv will have CUDA support.
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 

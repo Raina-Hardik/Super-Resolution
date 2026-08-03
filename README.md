@@ -1,6 +1,6 @@
 # Image Super-Resolution with EDSR
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.5-009688.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -19,7 +19,7 @@ This project implements a scalable image super-resolution system based on the En
 
 ## Prerequisites
 
-- Python 3.11 or higher
+- Python 3.14 or higher
 - [uv](https://github.com/astral-sh/uv) (recommended for dependency management)
 - [just](https://github.com/casey/just) command runner
 - Docker and Docker Compose (recommended for deployment)
