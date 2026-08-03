@@ -78,6 +78,7 @@ jobs:
       with:
         context: .
         file: docker/Dockerfile
+        load: true
         push: false
         tags: super-resolution:latest
         cache-from: type=gha
